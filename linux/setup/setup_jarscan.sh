@@ -19,7 +19,7 @@ mkdir -p /opt/scripts
 cp "../python/$script_fn" "/opt/scripts/$script_fn"
 
 # Create executable as a script, install to local/bin
-echo "/usr/bin/python3 /opt/scripts/$script_fn" > $cmd_name
+echo "/usr/bin/python3 /opt/scripts/$script_fn \"\$@\"" > $cmd_name
 chmod +x $cmd_name
 mv $cmd_name /usr/local/bin
 
