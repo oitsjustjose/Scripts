@@ -1,10 +1,11 @@
-import argparse
-import dep_mgr
+from argparse import ArgumentParser
+
+from utils import install_package
 
 try:
     import qrcode
 except ImportError:
-    dep_mgr.install_package("qrcode[pil]")
+    install_package("qrcode[pil]")
 finally:
     import qrcode
 
@@ -15,7 +16,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="WiFi QR Generator", description="Creates QR Codes to join a Password Protected WiFi Network")
+    parser = ArgumentParser(prog="WiFi QR Generator", description="Creates QR Codes to join a Password Protected WiFi Network")
     parser.add_argument("ssid", help="The SSID of the WiFi Network to connect to")
     parser.add_argument("passwd", help="The passphrase of the WiFi Network to connect to")
     parser.add_argument("-o", "--output", required=True, help="Where to save the resulting image to")

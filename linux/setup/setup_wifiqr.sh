@@ -1,6 +1,6 @@
 #!/bin/bash
-cmd_name="jarscan"
-script_fn="scan_jars.py"
+cmd_name="wifi-qr"
+script_fn="wifi_qr.py"
 
 # Re-run the script as root if we're not
 if [ "$EUID" != 0 ]; then

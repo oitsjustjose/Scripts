@@ -1,10 +1,9 @@
-import argparse
 import os
 import re
-import sys
-import zipfile
-
+from argparse import ArgumentParser
 from pathlib import Path
+from sys import exit
+from zipfile import ZipFile
 
 
 def scan_jar(jar_path: Path, args) -> None:
@@ -32,14 +31,12 @@ def scan_jar(jar_path: Path, args) -> None:
             try:
                 return re.compile(args.query).search(scan_target) is not None
             except re.error as err:
-                print(
-                    f"Regex Error! Invalid regular expression passed:\nFull Trace:\n{err}"
-                )
-                sys.exit(1)
+                print(f"Regex Error! Invalid regular expression passed:\nFull Trace:\n{err}")
+                exit(1)
         else:
             return args.query in scan_target
 
-    with zipfile.ZipFile(jar_path, "r") as jar:
+    with ZipFile(jar_path, "r") as jar:
         for file_name in jar.namelist():
             if args.deep:  # Perform a deep scan of the jar itself
                 with jar.open(file_name) as file:
@@ -62,12 +59,8 @@ def main(args) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        prog="Jar Scanner", description="Scans jars for a given file"
-    )
-    parser.add_argument(
-        "query", help="The term (or regex) to search for within the filename"
-    )
+    parser = ArgumentParser(prog="Jar Scanner", description="Scans jars for a given file")
+    parser.add_argument("query", help="The term (or regex) to search for within the filename")
     parser.add_argument(
         "-d",
         "--dir",

@@ -1,39 +1,7 @@
 from argparse import ArgumentParser
-from os import unlink
-from platform import release, system
 from random import randint
-from subprocess import check_call
-from tempfile import mktemp
 from uuid import uuid4
-
-
-def copy_to_clipboard(val: str) -> bool:
-    sys = system()
-    copy_cmd = ""
-    if sys == "Windows":
-        copy_cmd = "clip.exe"
-    elif sys == "macOS":
-        copy_cmd = "pbcopy"
-    elif sys == "Linux":
-        if "WSL" in release():
-            copy_cmd = "clip.exe"  # Windows native clip.exe still works in WSL
-        else:
-            copy_cmd = "xclip -selection clipboard"
-    else:
-        print(f"System {sys} is not supported - cannot copy to clipboard")
-        return False
-
-    tmp_path = mktemp()
-    with open(tmp_path, "w", encoding="utf-8") as fh:
-        fh.write(val.strip())
-
-    try:
-        ret_val = check_call(f"cat {str(tmp_path)} | {copy_cmd}", shell=True)
-    finally:
-        unlink(tmp_path)
-
-    return ret_val
-
+from utils import copy_to_clipboard
 
 def generate_uuid(length: int, current="") -> str:
     if len(current) >= length:
@@ -69,7 +37,7 @@ def main(args) -> None:
             print(accumulator)
     else:
         exclusions = list(map(lambda x: str(x).strip(), args.exclude_chars.split(",")))
-        char_choices = "ABCDEFGHIJKLMONPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz1234567890!@#$%^&*()-=_+[]{}\|;:,<.>/?`~"
+        char_choices = "ABCDEFGHIJKLMONPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz1234567890!@#$%^&*()-=_+[]{}\\|;:,<.>/?`~"
 
         for exclusion in exclusions:
             char_choices = char_choices.replace(exclusion, "")

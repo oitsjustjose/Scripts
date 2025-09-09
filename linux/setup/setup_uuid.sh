@@ -17,6 +17,7 @@ fi
 
 mkdir -p /opt/scripts
 cp "../python/$script_fn" "/opt/scripts/$script_fn"
+cp "../python/utils.py" "/opt/scripts/utils.py"
 
 # Create executable as a script, install to local/bin
 echo "/usr/bin/python3 /opt/scripts/$script_fn \"\$@\"" > $cmd_name
