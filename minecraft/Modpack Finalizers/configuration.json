@@ -1,0 +1,28 @@
+{
+  "_comment": "The following files (or folders) will be removed before shipping",
+  "remove": [
+    "config/jei/bookmarks.ini",
+    "config/jei/jei-client.ini",
+    "config/jei/world",
+    "config/jei/worldSettings.cfg",
+    "config/pneumaticcraft-client.toml",
+    "config/pneumaticcraft/PneumaticArmorHUDLayout.cfg",
+    "config/roughlyenoughitems/favorites.json5",
+    "config/roughlyenoughitems/pinyin_double.properties",
+    "config/roughlyenoughitems/pinyin.properties",
+    "config/smoothfont/smoothfont.cfg",
+    "config/xaerominimap_entities.json",
+    "config/xaerominimap.txt",
+    "config/xaeropatreon.txt",
+    "config/xaeroworldmap.txt",
+    "kubejs/.vscode",
+    "kubejs/exported",
+    "kubejs/probe",
+    "kubejs/README.txt",
+    "mods/.connector",
+    "mods/1.12.2",
+    "mods/1.12",
+    "mods/memory_repo",
+    "mods/railcraft"
+  ]
+}
