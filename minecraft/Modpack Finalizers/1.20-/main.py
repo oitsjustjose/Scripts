@@ -1,27 +1,33 @@
 """@author Jose Stovall | github.com/oitsjustjose"""
 
+import json
+import os
+import shutil
+import sys
+import zipfile
+from pathlib import Path
 from typing import List
 
-import zipfile
-
-import os
-import sys
-import shutil
-import json
 import toml
 
-THIS_DIR = "\\".join(os.path.realpath(__file__).split("\\")[:-1])
-CLEANUP_CONF_PATH = os.path.join(THIS_DIR, ".." "configuration.json")
-MMC_EXPORT_CONFIG_PATH = os.path.join(THIS_DIR, "config.toml")
-PACK_UNZIPPED_PATH = os.path.join(THIS_DIR, "activepack")
-PACK_ZIP_PATH = os.path.join(THIS_DIR, "activepack.zip")
-RP_DIR = os.path.join(PACK_UNZIPPED_PATH, "minecraft", "resourcepacks")
-TROUBLEMAKERS_PATH = os.path.join(THIS_DIR, "troublemakers")
+THIS_DIR = Path(__file__).absolute().parent
+CLEANUP_CONF_PATH = THIS_DIR.joinpath("..").joinpath("configuration.json").resolve()
+MMC_EXPORT_CONFIG_PATH = THIS_DIR.joinpath("config.toml").resolve()
+TROUBLEMAKERS_PATH = THIS_DIR.joinpath("troublemakers").resolve()
+WORKING_FOLDER: Path = Path(".").resolve()  # Temp, gets resolved from sys.argv in main()
+
+# Temporary variables that aren't actually persistent really
+__TMP_PACK_UNZIPPED_PATH = THIS_DIR.joinpath("activepack").resolve()
+__TMP_PACK_ZIP_PATH = THIS_DIR.joinpath("activepack.zip").resolve()
+__TMP_RESPACK_DIR = __TMP_PACK_UNZIPPED_PATH.joinpath("minecraft").joinpath("resourcepacks").resolve()
 
 
 def print(obj):
     """override"""
-    log_nm_base = sys.argv[1].split("\\")[-1]
+    # log_nm_base = sys.argv[1].split("\\")[-1]
+
+    log_nm_base = Path()
+
     with open(f"./{log_nm_base}.log", "a+", encoding="utf-8") as log_handle:
         log_handle.write(f"{str(obj)}\n")
 
@@ -34,17 +40,18 @@ def _clean_pack():
         config = json.loads(handle.read())
 
     for to_del in config["remove"]:
-        fpath = os.path.join(
-            PACK_UNZIPPED_PATH, "minecraft", to_del.replace("/", os.path.sep)
-        )
-        if not os.path.exists(fpath):
+        fpath = __TMP_PACK_UNZIPPED_PATH.joinpath("minecraft").joinpath(to_del)
+
+        if not fpath.exists():
             continue
-        if os.path.isdir(fpath):
+
+        if fpath.is_dir():
             shutil.rmtree(fpath)
             print(f"Removed directory {fpath}")
-        else:
-            os.unlink(fpath)
-            print(f"Removed file {fpath}")
+            continue
+
+        fpath.unlink()
+        print(f"Removed file {fpath}")
 
 
 def _get_modpack_outnames(join: bool = False) -> List[str]:
@@ -57,8 +64,8 @@ def _get_modpack_outnames(join: bool = False) -> List[str]:
         name = toml.loads(handle.read())["name"]
     if join:
         return [
-            os.path.join(THIS_DIR, f"MR_{name}.mrpack"),
-            os.path.join(THIS_DIR, f"CF_{name}.zip"),
+            str(THIS_DIR.joinpath(f"MR_{name}.mrpack")),
+            str(THIS_DIR.joinpath(f"CF_{name}.zip")),
         ]
     return [f"MR_{name}.mrpack", f"CF_{name}.zip"]
 
@@ -66,12 +73,12 @@ def _get_modpack_outnames(join: bool = False) -> List[str]:
 def __cleanup() -> None:
     """Cleans up output files"""
     os.unlink(MMC_EXPORT_CONFIG_PATH)
-    os.unlink(PACK_ZIP_PATH)
-    shutil.rmtree(PACK_UNZIPPED_PATH)
+    os.unlink(__TMP_PACK_ZIP_PATH)
+    shutil.rmtree(__TMP_PACK_UNZIPPED_PATH)
     shutil.rmtree(TROUBLEMAKERS_PATH)
     for file in os.listdir(THIS_DIR):
         if file.startswith("CF_") or file.startswith("MR_"):
-            os.unlink(os.path.join(THIS_DIR, file))
+            THIS_DIR.joinpath(file).unlink()
 
 
 def main() -> None:
@@ -94,15 +101,16 @@ def main() -> None:
         print("Missing 2nd parameter File")
         return
 
-    if not os.path.exists(TROUBLEMAKERS_PATH):
-        os.mkdir(TROUBLEMAKERS_PATH)
+    INPUT_FILE_PATH = Path(sys.argv[1]).resolve().parent
+    if not TROUBLEMAKERS_PATH.exists():
+        TROUBLEMAKERS_PATH.mkdir()
 
     # STEP 1: copy the modpack locally
-    shutil.copy(sys.argv[1], PACK_ZIP_PATH)
+    shutil.copy(INPUT_FILE_PATH.parent, __TMP_PACK_ZIP_PATH)
     print("STEP 1: SUCCESS")
 
     # STEP 2: unzip the pack
-    shutil.unpack_archive(PACK_ZIP_PATH, PACK_UNZIPPED_PATH, "zip")
+    shutil.unpack_archive(__TMP_PACK_ZIP_PATH, __TMP_PACK_UNZIPPED_PATH, "zip")
     print("STEP 2: SUCCESS")
 
     # STEP 2.1: clean up client mods
@@ -110,24 +118,23 @@ def main() -> None:
     print("STEP 2.1: SUCCESS")
 
     # STEP 2.2: grab the config.toml file
-    config_toml_path = os.path.join(PACK_UNZIPPED_PATH, "config.toml")
-    if os.path.exists(config_toml_path):
+    config_toml_path = __TMP_PACK_UNZIPPED_PATH.joinpath("config.toml")
+    if config_toml_path.exists():
         shutil.move(config_toml_path, MMC_EXPORT_CONFIG_PATH)
     print("STEP 2.2: SUCCESS")
 
     # STEP 2.3: grab PITA resourcepacks files like Witchery's 1.7.10 jar
-    if os.path.exists(RP_DIR):
-        for rpname in os.listdir(RP_DIR):
-            rppath = os.path.join(RP_DIR, rpname)
-            if not os.path.isdir(rppath) and not rppath.endswith(".zip"):
-                shutil.move(rppath, os.path.join(TROUBLEMAKERS_PATH, rpname))
-                print(f"STEP 2.3: Potential Troublemaker Found & Relocated: {rpname}")
+    if __TMP_RESPACK_DIR.exists() and __TMP_RESPACK_DIR.is_dir():
+        for respack_path in __TMP_RESPACK_DIR.iterdir():
+            if not respack_path.is_dir() and not respack_path.name.endswith(".zip"):
+                shutil.move(respack_path, TROUBLEMAKERS_PATH.joinpath(respack_path.name))
+                print(f"STEP 2.3: Potential Troublemaker Found & Relocated: {respack_path.name}")
     else:
         print("No resourcepacks dir - skipping")
 
     # STEP 3: re-zip & cleanup
-    shutil.make_archive(PACK_ZIP_PATH.replace(".zip", ""), "zip", PACK_UNZIPPED_PATH)
-    shutil.rmtree(PACK_UNZIPPED_PATH)
+    shutil.make_archive(str(__TMP_PACK_ZIP_PATH.with_suffix("")), "zip", __TMP_PACK_UNZIPPED_PATH)
+    shutil.rmtree(__TMP_PACK_UNZIPPED_PATH)
     print("STEP 3: SUCCESS")
 
     # ---- ANY FURTHER REFERENCES TO PACK_UNZIPPED_PATH ARE BAD!! ---- #
@@ -138,7 +145,7 @@ def main() -> None:
         " ".join(
             f"""
                 mmc-export.exe
-                -i "{PACK_ZIP_PATH}"
+                -i "{__TMP_PACK_ZIP_PATH}"
                 -f Modrinth CurseForge
                 -c "{MMC_EXPORT_CONFIG_PATH}"
                 -o "{THIS_DIR}"
@@ -155,17 +162,16 @@ def main() -> None:
     # STEP 5: Move Troublemakers back to inside each zip
     output_files = _get_modpack_outnames(join=True)
     for fname in output_files:
-        with zipfile.ZipFile(os.path.join(THIS_DIR, fname), "a") as zipf:
-            for filename in os.listdir(TROUBLEMAKERS_PATH):
-                troublemaker_path = os.path.join(TROUBLEMAKERS_PATH, filename)
-                zipf.write(troublemaker_path, f"overrides/resourcepacks/{filename}")
+        with zipfile.ZipFile(THIS_DIR.joinpath(fname), "a") as zipf:
+            for file in TROUBLEMAKERS_PATH.iterdir():
+                troublemaker_path = TROUBLEMAKERS_PATH.joinpath(file)
+                zipf.write(troublemaker_path, f"overrides/resourcepacks/{file}")
     print("STEP 5: SUCCESS")
 
     # STEP 6: Move finished pack files back to OG dir
-    og_dirname = "\\".join(sys.argv[1].split("\\")[:-1])
     output_files = _get_modpack_outnames(join=False)
     for fname in output_files + ["bundled_links.md"]:
-        shutil.move(os.path.join(THIS_DIR, fname), os.path.join(og_dirname, fname))
+        shutil.move(THIS_DIR.joinpath(fname), INPUT_FILE_PATH.parent.joinpath(fname))
 
     print("STEP 6: SUCCESS")
 
