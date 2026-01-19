@@ -1,3 +1,3 @@
-# Scripts
+# This Repo has Moved!
 
-These are little scripts for multiple platforms (maybe, for now just Linux). Most of the complicated ones are backed by Python, but come with installers.
+This repository has been moved to a [new location!](https://git.oitsjustjose.com/me/Scripts)
